@@ -2,7 +2,7 @@ local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footag
 
 local Window = WindUI:CreateWindow({
     Title = "xtal",
-    SubTitle = "战斗 / Hitbox / 透视 / 人物 / 锁定 / 农场 / Helper / 服务器延迟 / 实用",
+    SubTitle = "战斗 / Hitbox / 透视 / 人物 / 锁定 / 娱乐 / 农场 / Helper / 服务器延迟 / 实用",
     Theme = "Dark",
     Size = UDim2.fromOffset(620, 760)
 })
@@ -13,12 +13,13 @@ local HitboxTab = Window:Tab({ Title = "Hitbox", Icon = "crosshair", Border = tr
 local HitboxSection = HitboxTab:Section({ Title = "范围调整" })
 local EspTab = Window:Tab({ Title = "透视", Icon = "rbxassetid://6031068432", Border = true })
 local EspSection = EspTab:Section({ Title = "透视功能" })
-local EspVisualSection = EspTab:Section({ Title = "视觉选项" })
 local CharacterTab = Window:Tab({ Title = "人物功能", Icon = "rbxassetid://6031068432", Border = true })
 local CharacterSection = CharacterTab:Section({ Title = "加速 / 防御 / 防卡 / 飞行" })
 local LockTab = Window:Tab({ Title = "锁定功能", Icon = "rbxassetid://6031068432", Border = true })
 local LockSection = LockTab:Section({ Title = "目标锁定 / 带来全部人" })
 local LoopGotoSection = LockTab:Section({ Title = "循环传送" })
+local FunTab = Window:Tab({ Title = "娱乐", Icon = "rbxassetid://6031068432", Border = true })
+local FunSection = FunTab:Section({ Title = "搞怪功能" })
 local FarmTab = Window:Tab({ Title = "农场", Icon = "rbxassetid://6031068432", Border = true })
 local FarmSection = FarmTab:Section({ Title = "自动杀戮" })
 local HelperTab = Window:Tab({ Title = "Helper", Icon = "rbxassetid://6031068432", Border = true })
@@ -82,38 +83,12 @@ local LargeRange = 500
 local KillAuraRange = 100
 
 local EspEnabled, EspConn, EspUpdateConn, EspDrawings = false, nil, nil, {}
-local EspConf = {
-    TeamCheck = false,
-    FriendCheck = false,
-    ShowName = true,
-    ShowDistance = true,
-    ShowHealthBar = true,
-    ShowHealthText = true,
-    ShowBox = true,
-    ShowBoxFill = true,
-    ShowChams = false,
-    ShowTracer = false,
-    ShowSkeleton = false,
-    MaxDistance = 1000,
-    BoxColor = Color3.fromRGB(255, 255, 255),
-    BoxFillColor = Color3.fromRGB(0, 0, 0),
-    BoxFillTransparency = 0.5,
-    BoxThickness = 2,
-    NameColor = Color3.fromRGB(255, 255, 255),
-    DistanceColor = Color3.fromRGB(200, 200, 200),
-    HealthBarWidth = 3,
-    ChamsColor = Color3.fromRGB(255, 0, 0),
-    ChamsOutlineColor = Color3.fromRGB(255, 255, 255),
-    ChamsTransparency = 0.5,
-    TracerColor = Color3.fromRGB(255, 255, 255),
-    TracerOrigin = "Bottom",
-    HealthBasedColor = true,
-}
-
 local SpeedEnabled, SpeedMultiplier, SpeedConn = false, 2, nil
 local AntiLagEnabled, AntiLagLoop = false, nil
 local LockTargetName, LockEnabled, LockLoop, LockPlayerDropdown, LockToggleUI
 local BringAllEnabled, BringAllLoop
+local HeadlessEnabled, LeglessEnabled
+local originalHeadTransparency, originalRightLegTransparency
 local FarmEnabled, FarmLoop, FarmOpenedKillAura
 local LaggerEnabled, LaggerLoop
 local InstantTransformationEnabled, InfiniteUltimateEnabled
@@ -574,80 +549,15 @@ local function applyHitbox(on)
     end
 end
 
--- ═══════════════════════════════════════════
--- 优化后的透视
--- ═══════════════════════════════════════════
+-- 透视
 local function createPlayerEsp(player)
     if player == LocalPlayer or EspDrawings[player] then return end
-    local Box = Drawing.new("Square")
-    Box.Thickness = EspConf.BoxThickness
-    Box.Filled = false
-    Box.Transparency = 1
-    Box.Visible = false
-
-    local BoxFill = Drawing.new("Square")
-    BoxFill.Thickness = 1
-    BoxFill.Filled = true
-    BoxFill.Transparency = EspConf.BoxFillTransparency
-    BoxFill.Visible = false
-
-    local Name = Drawing.new("Text")
-    Name.Size = 13
-    Name.Center = true
-    Name.Outline = true
-    Name.OutlineColor = Color3.fromRGB(0,0,0)
-    Name.Transparency = 1
-    Name.Visible = false
-
-    local Distance = Drawing.new("Text")
-    Distance.Size = 12
-    Distance.Center = true
-    Distance.Outline = true
-    Distance.OutlineColor = Color3.fromRGB(0,0,0)
-    Distance.Transparency = 1
-    Distance.Visible = false
-
-    local HealthBg = Drawing.new("Square")
-    HealthBg.Thickness = 1
-    HealthBg.Color = Color3.fromRGB(0,0,0)
-    HealthBg.Filled = true
-    HealthBg.Transparency = 0.5
-    HealthBg.Visible = false
-
-    local HealthBar = Drawing.new("Square")
-    HealthBar.Thickness = 1
-    HealthBar.Filled = true
-    HealthBar.Transparency = 1
-    HealthBar.Visible = false
-
-    local HealthText = Drawing.new("Text")
-    HealthText.Size = 10
-    HealthText.Center = true
-    HealthText.Outline = true
-    HealthText.OutlineColor = Color3.fromRGB(0,0,0)
-    HealthText.Transparency = 1
-    HealthText.Visible = false
-
-    local Chams = Instance.new("Highlight")
-    Chams.FillColor = EspConf.ChamsColor
-    Chams.OutlineColor = EspConf.ChamsOutlineColor
-    Chams.FillTransparency = EspConf.ChamsTransparency
-    Chams.OutlineTransparency = 0
-    Chams.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    Chams.Adornee = nil
-    Chams.Parent = workspace
-    Chams.Enabled = false
-
-    local Tracer = Drawing.new("Line")
-    Tracer.Thickness = 1
-    Tracer.Transparency = 1
-    Tracer.Visible = false
-
-    EspDrawings[player] = {
-        Box = Box, BoxFill = BoxFill, Name = Name, Distance = Distance,
-        HealthBg = HealthBg, HealthBar = HealthBar, HealthText = HealthText,
-        Chams = Chams, Tracer = Tracer
-    }
+    local Box = Drawing.new("Square"); Box.Thickness = 2; Box.Filled = false; Box.Transparency = 1; Box.Visible = false
+    local BoxFill = Drawing.new("Square"); BoxFill.Thickness = 1; BoxFill.Color = Color3.fromRGB(0,0,0); BoxFill.Filled = true; BoxFill.Transparency = 0.7; BoxFill.Visible = false
+    local Name = Drawing.new("Text"); Name.Size = 13; Name.Color = Color3.fromRGB(255,255,255); Name.Center = true; Name.Outline = true; Name.OutlineColor = Color3.fromRGB(0,0,0); Name.Transparency = 1; Name.Visible = false
+    local HealthBg = Drawing.new("Square"); HealthBg.Thickness = 1; HealthBg.Color = Color3.fromRGB(0,0,0); HealthBg.Filled = true; HealthBg.Transparency = 0.5; HealthBg.Visible = false
+    local HealthBar = Drawing.new("Square"); HealthBar.Thickness = 1; HealthBar.Filled = true; HealthBar.Transparency = 1; HealthBar.Visible = false
+    EspDrawings[player] = { Box=Box, BoxFill=BoxFill, Name=Name, HealthBg=HealthBg, HealthBar=HealthBar }
 end
 
 local function getCharacterScreenBounds(character)
@@ -666,167 +576,35 @@ local function getCharacterScreenBounds(character)
         end
     end
     if not anyVisible then return nil end
-    return { MinX=minX, MinY=minY, MaxX=maxX, MaxY=maxY, Width=maxX-minX, Height=maxY-minY, CenterX=(minX+maxX)/2, CenterY=(minY+maxY)/2 }
-end
-
-local function shouldShowPlayer(player)
-    if player == LocalPlayer then return false end
-    if EspConf.TeamCheck and player.Team == LocalPlayer.Team then return false end
-    if EspConf.FriendCheck then
-        local ok, isF = pcall(function() return LocalPlayer:IsFriendsWith(player.UserId) end)
-        if ok and isF then return false end
-    end
-    return true
+    return { MinX=minX, MinY=minY, MaxX=maxX, MaxY=maxY, Width=maxX-minX, Height=maxY-minY, CenterX=(minX+maxX)/2 }
 end
 
 local function updateEsp()
-    local camera = workspace.CurrentCamera
-    if not camera then return end
-    local viewportSize = camera.ViewportSize
-    local bottomCenter = Vector2.new(viewportSize.X / 2, viewportSize.Y)
-
     for player, d in pairs(EspDrawings) do
         local char = player and player.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
         local root = char and char:FindFirstChild("HumanoidRootPart")
-
-        if hum and hum.Health > 0 and root and shouldShowPlayer(player) then
-            local distance = (camera.CFrame.Position - root.Position).Magnitude
+        if hum and hum.Health > 0 and root then
             local b = getCharacterScreenBounds(char)
-
-            if b and b.Width > 0 and b.Height > 0 and distance <= EspConf.MaxDistance then
+            if b and b.Width > 0 and b.Height > 0 then
                 local hp = hum.Health / hum.MaxHealth
-                local color = EspConf.BoxColor
-                if EspConf.HealthBasedColor then
-                    if hp > 0.5 then color = Color3.fromRGB(0,255,0)
-                    elseif hp > 0.25 then color = Color3.fromRGB(255,255,0)
-                    else color = Color3.fromRGB(255,0,0) end
-                end
-
-                -- 方框
-                if EspConf.ShowBox then
-                    d.Box.Position = Vector2.new(b.MinX, b.MinY)
-                    d.Box.Size = Vector2.new(b.Width, b.Height)
-                    d.Box.Color = color
-                    d.Box.Thickness = EspConf.BoxThickness
-                    d.Box.Visible = true
-                else
-                    d.Box.Visible = false
-                end
-
-                -- 方框填充
-                if EspConf.ShowBoxFill then
-                    d.BoxFill.Position = Vector2.new(b.MinX+1, b.MinY+1)
-                    d.BoxFill.Size = Vector2.new(b.Width-2, b.Height-2)
-                    d.BoxFill.Color = EspConf.BoxFillColor
-                    d.BoxFill.Transparency = EspConf.BoxFillTransparency
-                    d.BoxFill.Visible = true
-                else
-                    d.BoxFill.Visible = false
-                end
-
-                -- 名字
-                if EspConf.ShowName then
-                    d.Name.Text = player.Name
-                    d.Name.Color = EspConf.NameColor
-                    d.Name.Position = Vector2.new(b.CenterX, b.MinY - 16)
-                    d.Name.Visible = true
-                else
-                    d.Name.Visible = false
-                end
-
-                -- 距离
-                if EspConf.ShowDistance then
-                    d.Distance.Text = "[" .. math.floor(distance) .. "m]"
-                    d.Distance.Color = EspConf.DistanceColor
-                    d.Distance.Position = Vector2.new(b.CenterX, b.MaxY + 4)
-                    d.Distance.Visible = true
-                else
-                    d.Distance.Visible = false
-                end
-
-                -- 血条
-                if EspConf.ShowHealthBar then
-                    d.HealthBg.Position = Vector2.new(b.MinX - EspConf.HealthBarWidth - 2, b.MinY)
-                    d.HealthBg.Size = Vector2.new(EspConf.HealthBarWidth, b.Height)
-                    d.HealthBg.Visible = true
-
-                    d.HealthBar.Position = Vector2.new(b.MinX - EspConf.HealthBarWidth - 2, b.MaxY - b.Height * hp)
-                    d.HealthBar.Size = Vector2.new(EspConf.HealthBarWidth, b.Height * hp)
-                    d.HealthBar.Color = color
-                    d.HealthBar.Visible = true
-                else
-                    d.HealthBg.Visible = false
-                    d.HealthBar.Visible = false
-                end
-
-                -- 血量文字
-                if EspConf.ShowHealthText then
-                    d.HealthText.Text = math.floor(hp * 100) .. "%"
-                    d.HealthText.Color = color
-                    d.HealthText.Position = Vector2.new(b.MinX - EspConf.HealthBarWidth - 12, b.CenterY)
-                    d.HealthText.Visible = true
-                else
-                    d.HealthText.Visible = false
-                end
-
-                -- 高亮 (Chams)
-                if EspConf.ShowChams then
-                    d.Chams.Adornee = char
-                    d.Chams.FillColor = EspConf.ChamsColor
-                    d.Chams.OutlineColor = EspConf.ChamsOutlineColor
-                    d.Chams.FillTransparency = EspConf.ChamsTransparency
-                    d.Chams.Enabled = true
-                else
-                    d.Chams.Enabled = false
-                end
-
-                -- 追踪线
-                if EspConf.ShowTracer then
-                    local origin = EspConf.TracerOrigin == "Top" and Vector2.new(bottomCenter.X, 0) or bottomCenter
-                    d.Tracer.From = origin
-                    d.Tracer.To = Vector2.new(b.CenterX, b.CenterY)
-                    d.Tracer.Color = EspConf.TracerColor
-                    d.Tracer.Visible = true
-                else
-                    d.Tracer.Visible = false
-                end
+                local color = hp > 0.5 and Color3.fromRGB(0,255,0) or (hp > 0.25 and Color3.fromRGB(255,255,0) or Color3.fromRGB(255,0,0))
+                d.Box.Position = Vector2.new(b.MinX, b.MinY); d.Box.Size = Vector2.new(b.Width, b.Height); d.Box.Color = color; d.Box.Visible = true
+                d.BoxFill.Position = Vector2.new(b.MinX+1, b.MinY+1); d.BoxFill.Size = Vector2.new(b.Width-2, b.Height-2); d.BoxFill.Visible = true
+                d.Name.Text = player.Name .. " [" .. math.floor(hp*100) .. "%]"; d.Name.Position = Vector2.new(b.CenterX, b.MinY-12); d.Name.Visible = true
+                d.HealthBg.Position = Vector2.new(b.MinX, b.MaxY+4); d.HealthBg.Size = Vector2.new(b.Width, 3); d.HealthBg.Visible = true
+                d.HealthBar.Position = Vector2.new(b.MinX, b.MaxY+4); d.HealthBar.Size = Vector2.new(b.Width*hp, 3); d.HealthBar.Color = color; d.HealthBar.Visible = true
             else
-                d.Box.Visible = false
-                d.BoxFill.Visible = false
-                d.Name.Visible = false
-                d.Distance.Visible = false
-                d.HealthBg.Visible = false
-                d.HealthBar.Visible = false
-                d.HealthText.Visible = false
-                d.Chams.Enabled = false
-                d.Tracer.Visible = false
+                d.Box.Visible=false; d.BoxFill.Visible=false; d.Name.Visible=false; d.HealthBg.Visible=false; d.HealthBar.Visible=false
             end
         else
-            if d then
-                d.Box.Visible = false
-                d.BoxFill.Visible = false
-                d.Name.Visible = false
-                d.Distance.Visible = false
-                d.HealthBg.Visible = false
-                d.HealthBar.Visible = false
-                d.HealthText.Visible = false
-                d.Chams.Enabled = false
-                d.Tracer.Visible = false
-            end
+            d.Box.Visible=false; d.BoxFill.Visible=false; d.Name.Visible=false; d.HealthBg.Visible=false; d.HealthBar.Visible=false
         end
     end
 end
 
 local function clearEsp()
-    for _, d in pairs(EspDrawings) do
-        for _, dr in pairs(d) do
-            pcall(function()
-                if dr.Remove then dr:Remove()
-                elseif dr.Destroy then dr:Destroy() end
-            end)
-        end
-    end
+    for _, d in pairs(EspDrawings) do for _, dr in pairs(d) do dr:Remove() end end
     EspDrawings = {}
 end
 
@@ -1228,6 +1006,28 @@ local function setInfiniteUltimate(state)
     Notify("无限觉醒", state and "已开启" or "已关闭", "infinity")
 end
 
+local function setHeadless(enabled)
+    HeadlessEnabled = enabled
+    local char = LocalPlayer.Character; if not char then return end
+    local head = char:FindFirstChild("Head")
+    if head then
+        if enabled then originalHeadTransparency = head.Transparency; head.Transparency = 1
+        else head.Transparency = originalHeadTransparency or 0 end
+    end
+    Notify("无头模式", enabled and "已开启" or "已关闭", "user")
+end
+
+local function setLegless(enabled)
+    LeglessEnabled = enabled
+    local char = LocalPlayer.Character; if not char then return end
+    local leg = char:FindFirstChild("Right Leg") or char:FindFirstChild("RightUpperLeg") or char:FindFirstChild("RightLowerLeg") or char:FindFirstChild("RightFoot")
+    if leg then
+        if enabled then originalRightLegTransparency = leg.Transparency; leg.Transparency = 1
+        else leg.Transparency = originalRightLegTransparency or 0 end
+    end
+    Notify("断右腿模式", enabled and "已开启" or "已关闭", "user")
+end
+
 -- ============================================================
 -- 战斗 UI
 -- ============================================================
@@ -1253,29 +1053,10 @@ HitboxSection:Slider({ Title = "纵向尺寸", Value = { Min = 1, Max = 250, Def
 HitboxSection:Slider({ Title = "前后尺寸", Value = { Min = 1, Max = 250, Default = 40 }, Callback = function(v) HBConf.Z = v end })
 HitboxSection:Toggle({ Title = "显示判定框", Value = false, Callback = function(v) HBConf.V = v end })
 
--- ═══════════════════════════════════════════
--- 优化后的透视 UI
--- ═══════════════════════════════════════════
+-- 透视 UI
 EspSection:Toggle({ Title = "玩家透视", Value = false, Callback = function(state)
     if state then startEsp() Notify("玩家透视", "已开启", "eye") else stopEsp() Notify("玩家透视", "已关闭", "eye-off") end
 end })
-EspSection:Toggle({ Title = "队伍检测", Desc = "排除队友", Value = false, Callback = function(v) EspConf.TeamCheck = v end })
-EspSection:Toggle({ Title = "好友检测", Desc = "排除好友", Value = false, Callback = function(v) EspConf.FriendCheck = v end })
-EspSection:Slider({ Title = "最大显示距离", Value = { Min = 100, Max = 5000, Default = 1000 }, Callback = function(v) EspConf.MaxDistance = v end })
-
-EspVisualSection:Toggle({ Title = "显示方框", Value = true, Callback = function(v) EspConf.ShowBox = v end })
-EspVisualSection:Toggle({ Title = "方框填充", Value = true, Callback = function(v) EspConf.ShowBoxFill = v end })
-EspVisualSection:Toggle({ Title = "显示名字", Value = true, Callback = function(v) EspConf.ShowName = v end })
-EspVisualSection:Toggle({ Title = "显示距离", Value = true, Callback = function(v) EspConf.ShowDistance = v end })
-EspVisualSection:Toggle({ Title = "显示血条", Value = true, Callback = function(v) EspConf.ShowHealthBar = v end })
-EspVisualSection:Toggle({ Title = "显示血量百分比", Value = true, Callback = function(v) EspConf.ShowHealthText = v end })
-EspVisualSection:Toggle({ Title = "显示高亮 (Chams)", Value = false, Callback = function(v) EspConf.ShowChams = v end })
-EspVisualSection:Toggle({ Title = "显示追踪线", Value = false, Callback = function(v) EspConf.ShowTracer = v end })
-EspVisualSection:Toggle({ Title = "血量变色", Desc = "根据血量改变方框颜色", Value = true, Callback = function(v) EspConf.HealthBasedColor = v end })
-EspVisualSection:Slider({ Title = "方框粗细", Value = { Min = 1, Max = 5, Default = 2 }, Callback = function(v) EspConf.BoxThickness = v end })
-EspVisualSection:Slider({ Title = "方框填充透明度", Value = { Min = 0, Max = 1, Default = 0.5 }, Callback = function(v) EspConf.BoxFillTransparency = v end })
-EspVisualSection:Slider({ Title = "血条宽度", Value = { Min = 1, Max = 8, Default = 3 }, Callback = function(v) EspConf.HealthBarWidth = v end })
-EspVisualSection:Dropdown({ Title = "追踪线起点", Values = {"底部","顶部"}, Value = "底部", Callback = function(v) EspConf.TracerOrigin = (v == "顶部") and "Top" or "Bottom" end })
 
 -- 人物 UI
 CharacterSection:Toggle({ Title = "移动加速", Value = false, Callback = function(s) setSpeed(s, SpeedMultiplier) end })
@@ -1384,6 +1165,10 @@ LoopGotoSection:Toggle({ Title = "快速循环传送", Value = false, Callback =
         if LoopGotoCtrl.Mode == "quick" then LoopGotoCtrl.Stop() end
     end
 end })
+
+-- 娱乐 UI
+FunSection:Toggle({ Title = "无头模式", Value = false, Callback = function(s) setHeadless(s) end })
+FunSection:Toggle({ Title = "断右腿模式", Value = false, Callback = function(s) setLegless(s) end })
 
 -- 农场 UI
 FarmSection:Toggle({ Title = "自动杀戮（农场）", Value = false, Callback = function(state)
